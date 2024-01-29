@@ -31,7 +31,7 @@ type Record struct {
 	RecordId string `json:"RecordId"`
 }
 
-var subDomainName, accessKeyId, accessKeySecret, notifyKey string
+var domainName, subDomainName, accessKeyId, accessKeySecret, notifyKey string
 
 var customLogger = log.New(os.Stdout, "CUSTOM: ", log.Ldate|log.Ltime)
 
@@ -46,6 +46,7 @@ func main() {
 
 	accessKeyId = os.Getenv("aliAccessKeyId")
 	accessKeySecret = os.Getenv("aliAccessKeySecret")
+	domainName = os.Getenv("domainName")
 	subDomainName = os.Getenv("subDomainName")
 	notifyKey = os.Getenv("notifyKey")
 
@@ -80,12 +81,13 @@ func getCurrentIp() (string, error) {
 	ip := getCurrentIp1()
 	if isIpv4(ip) {
 		return ip, nil
-	} else {
-		ip = getCurrentIp2()
-		if isIpv4(ip) {
-			return ip, nil
-		}
 	}
+	//else {
+	//	ip = getCurrentIp2()
+	//	if isIpv4(ip) {
+	//		return ip, nil
+	//	}
+	//}
 	return "nil", errors.New("ip is not ipv4")
 }
 
@@ -97,7 +99,7 @@ func getRecordId(client *sdk.Client) *Record {
 	request.Domain = "alidns.aliyuncs.com"                // 指定域名则不会寻址，如认证方式为 Bearer Token 的服务则需要指定
 	request.Version = "2015-01-09"                        // 指定产品版本
 	request.ApiName = "DescribeDomainRecords"             // 指定接口名
-	request.QueryParams["DomainName"] = "ctofenglei.top"  // 设置参数值
+	request.QueryParams["DomainName"] = domainName        // 设置参数值
 	request.QueryParams["RegionId"] = RegionId            // 指定请求的区域，不指定则使用客户端区域、默认区域
 	request.TransToAcsRequest()                           // 把公共请求转化为acs请求
 	response, err := client.ProcessCommonRequest(request) // 发起请求并处理异常
@@ -113,7 +115,7 @@ func getRecordId(client *sdk.Client) *Record {
 	}
 	for _, v := range result.DomainRecords.Record {
 		if v.RR == subDomainName {
-			customLogger.Println(v.Value)
+			customLogger.Println("当前dns的ip:", v.Value)
 			return &v
 		}
 	}
@@ -153,7 +155,7 @@ func updateRecord(client *sdk.Client, record *Record, newIp string) {
 
 // get current ip
 func getCurrentIp1() string {
-	resp, err := http.Get("https://api64.ipify.org?format=text")
+	resp, err := http.Get("http://members.3322.org/dyndns/getip")
 	if err != nil {
 		customLogger.Println("无法获取公网IP:", err)
 		return ""
@@ -168,8 +170,8 @@ func getCurrentIp1() string {
 	}
 
 	// 显示公网IP地址
-
-	return string(ipAddress)
+	rs := string(ipAddress)
+	return strings.Trim(rs, "\n")
 }
 func getCurrentIp2() string {
 	resp, err := http.Get("https://ip.cn/api/index?ip=&type=0")
