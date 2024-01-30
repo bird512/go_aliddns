@@ -58,8 +58,11 @@ func main() {
 	}
 
 	doJob := func() {
-		customLogger.Println("执行定时任务，每1分钟一次")
+		//customLogger.Println("执行定时任务，每1分钟一次")
 		record := getRecordId(client)
+		if record == nil {
+			return
+		}
 		ip, err := getCurrentIp()
 		if err != nil {
 			customLogger.Println(err)
@@ -105,12 +108,13 @@ func getRecordId(client *sdk.Client) *Record {
 	response, err := client.ProcessCommonRequest(request) // 发起请求并处理异常
 
 	if err != nil {
-		// Handle exceptions
-		panic(err)
+		customLogger.Println("error in getRecordId:", err)
+		return nil
 	}
 	var result DomainDescribe
 	err = json.Unmarshal([]byte(response.GetHttpContentString()), &result)
 	if err != nil {
+		customLogger.Println("error in Unmarshal json:", err)
 		return nil
 	}
 	for _, v := range result.DomainRecords.Record {
